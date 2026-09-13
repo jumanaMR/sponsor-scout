@@ -1,0 +1,14 @@
+# Everything needed to run the notebook, the Streamlit app, and CV loading.
+pandas>=2.0
+scikit-learn>=1.3
+numpy>=1.24
+
+# Streamlit app (app.py)
+streamlit>=1.30
+
+# CV loading — .pdf and .docx (plain .txt needs neither)
+pypdf>=3.17
+python-docx>=1.1
+
+# Notebook
+jupyter>=1.0

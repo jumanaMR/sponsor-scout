@@ -1,0 +1,8 @@
+# Deliberately leaner than requirements.txt: the test suite only exercises
+# the core pipeline, so CI doesn't install Streamlit, Jupyter, or the
+# document parsers (which are lazy imports inside extract_text_from_file).
+# Fewer moving parts means CI fails for real reasons, not dependency drift.
+pandas>=2.0
+scikit-learn>=1.3
+numpy>=1.24
+pytest>=7.4

@@ -1,0 +1,2 @@
+company,role_title,country,source,date_posted,text
+Example Company Pty Ltd,AI Engineer,Australia,https://www.seek.com.au/job/xxxxxxx,2026-09-01,"Paste the full job posting text here, including any sentence about visa sponsorship, relocation, or work rights requirements. The more of the original posting you paste, the better the retrieval and sponsorship-signal detection will work."

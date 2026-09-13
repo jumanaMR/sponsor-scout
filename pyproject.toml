@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sponsor-scout"
+version = "0.1.0"
+description = "Retrieval over job postings, scored for visa-sponsorship signal"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Jumana MR" }]
+keywords = ["rag", "retrieval", "vector-search", "job-search", "visa-sponsorship"]
+dependencies = ["pandas>=2.0", "scikit-learn>=1.3", "numpy>=1.24"]
+
+[project.optional-dependencies]
+app = ["streamlit>=1.30", "pypdf>=3.17", "python-docx>=1.1"]
+dev = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+include = ["sponsor_scout*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

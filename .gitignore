@@ -1,0 +1,42 @@
+# --- Personal data: never commit -------------------------------------------
+# Your CV and any real job postings you collect are personal data. The
+# template in data/ is committed; anything you actually fill in is not.
+my_cv.*
+cv.*
+*_cv.pdf
+*_cv.docx
+data/*.csv
+!data/sponsor_leads_template.csv
+seen_postings.json
+sponsorship_report.csv
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- Tooling ---------------------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Notebooks -------------------------------------------------------------
+.ipynb_checkpoints/
+
+# --- Editors / OS ----------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+
+# --- Secrets ---------------------------------------------------------------
+.env
+.env.*
+*.pem

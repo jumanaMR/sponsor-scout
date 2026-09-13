@@ -1,0 +1,835 @@
+<title>Sponsor Scout</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f4f6f6;
+    --panel:#ffffff;
+    --panel-2:#eef2f2;
+    --ink:#13181b;
+    --muted:#5d686e;
+    --faint:#8d979c;
+    --line:#dde3e2;
+    --accent:#0e7a82;
+    --accent-ink:#075a60;
+    --accent-wash:#e2f1f1;
+    --ok:#2f7d4f;
+    --ok-wash:#e4f1e9;
+    --no:#a6432f;
+    --no-wash:#f6e5e0;
+    --maybe:#b8722e;
+    --maybe-wash:#f7ebdc;
+    --none:#6b7280;
+    --none-wash:#eceef0;
+    --shadow:0 1px 2px rgba(16,22,24,.05), 0 10px 26px -20px rgba(16,22,24,.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#101416;
+      --panel:#181e21;
+      --panel-2:#1f2629;
+      --ink:#e8eceb;
+      --muted:#99a3a8;
+      --faint:#79838a;
+      --line:#283033;
+      --accent:#3fb7bd;
+      --accent-ink:#8adade;
+      --accent-wash:#142c2e;
+      --ok:#6cc08a;
+      --ok-wash:#152a1e;
+      --no:#e08a76;
+      --no-wash:#2c1a16;
+      --maybe:#e0a566;
+      --maybe-wash:#2b2115;
+      --none:#98a1a8;
+      --none-wash:#232a2d;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 26px -20px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#101416;
+    --panel:#181e21;
+    --panel-2:#1f2629;
+    --ink:#e8eceb;
+    --muted:#99a3a8;
+    --faint:#79838a;
+    --line:#283033;
+    --accent:#3fb7bd;
+    --accent-ink:#8adade;
+    --accent-wash:#142c2e;
+    --ok:#6cc08a;
+    --ok-wash:#152a1e;
+    --no:#e08a76;
+    --no-wash:#2c1a16;
+    --maybe:#e0a566;
+    --maybe-wash:#2b2115;
+    --none:#98a1a8;
+    --none-wash:#232a2d;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 26px -20px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    line-height:1.55;
+    padding-inline:18px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding-block:32px 80px;}
+
+  /* header */
+  header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;}
+  h1{
+    font-size:26px;font-weight:700;letter-spacing:-0.02em;margin:0 0 4px;
+  }
+  .tagline{color:var(--muted);font-size:14px;margin:0;max-width:52ch;}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;}
+  .stat{
+    background:var(--panel);border:1px solid var(--line);border-radius:7px;
+    padding:7px 11px;min-width:72px;box-shadow:var(--shadow);
+  }
+  .stat .v{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;display:block;line-height:1.2;}
+  .stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);}
+
+  /* banner */
+  .banner{
+    margin-top:18px;background:var(--maybe-wash);border:1px solid var(--maybe);
+    border-radius:8px;padding:12px 14px;font-size:13.5px;color:var(--ink);
+    display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;
+  }
+  .banner b{color:var(--maybe);}
+  .banner .grow{flex:1;min-width:220px;}
+
+  /* tabs */
+  nav.tabs{
+    display:flex;gap:2px;margin:22px 0 0;border-bottom:1px solid var(--line);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    background:none;border:none;border-bottom:2px solid transparent;
+    font-family:inherit;font-size:14px;font-weight:500;color:var(--muted);
+    padding:9px 13px;cursor:pointer;white-space:nowrap;margin-bottom:-1px;
+  }
+  nav.tabs button:hover{color:var(--ink);}
+  nav.tabs button[aria-selected="true"]{color:var(--accent-ink);border-bottom-color:var(--accent);}
+  nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px;}
+
+  .panel{padding-top:22px;}
+  h2{font-size:16px;font-weight:600;margin:0 0 3px;}
+  .hint{color:var(--muted);font-size:13px;margin:0 0 16px;max-width:62ch;}
+
+  /* posting rows */
+  .row{
+    background:var(--panel);border:1px solid var(--line);border-left-width:3px;
+    border-radius:8px;padding:12px 14px;margin-bottom:9px;box-shadow:var(--shadow);
+  }
+  .row.ok{border-left-color:var(--ok);}
+  .row.no{border-left-color:var(--no);}
+  .row.maybe{border-left-color:var(--maybe);}
+  .row.none{border-left-color:var(--none);}
+  .row-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;}
+  .row-title{font-weight:600;font-size:14.5px;}
+  .row-sub{color:var(--muted);font-size:12.5px;margin-top:1px;}
+  .row-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+  .row-body{
+    margin-top:11px;padding-top:11px;border-top:1px solid var(--line);
+    font-size:13.5px;color:var(--ink);
+  }
+  .row-body .ev{margin-top:9px;font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+
+  .pill{
+    font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;
+    white-space:nowrap;display:inline-block;
+  }
+  .pill.ok{background:var(--ok-wash);color:var(--ok);}
+  .pill.no{background:var(--no-wash);color:var(--no);}
+  .pill.maybe{background:var(--maybe-wash);color:var(--maybe);}
+  .pill.none{background:var(--none-wash);color:var(--none);}
+
+  .score{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-variant-numeric:tabular-nums;
+    color:var(--accent-ink);background:var(--accent-wash);padding:2px 7px;border-radius:5px;
+  }
+
+  /* controls */
+  button.btn{
+    font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;
+    background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:5px 11px;
+  }
+  button.btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+  button.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  button.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  button.btn.primary:hover{opacity:.9;color:#fff;}
+  button.btn.quiet{background:none;color:var(--muted);}
+  button.btn.danger:hover{border-color:var(--no);color:var(--no);}
+
+  input[type=text], input[type=search], textarea, select{
+    font-family:inherit;font-size:13.5px;width:100%;
+    background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);border-radius:6px;padding:8px 10px;
+  }
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent);}
+  textarea{resize:vertical;line-height:1.5;}
+  label.fld{display:block;margin-bottom:10px;}
+  label.fld span{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:4px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+  @media (max-width:520px){ .grid2{grid-template-columns:1fr;} }
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .toolbar .spacer{flex:1;}
+
+  details.adder{
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:0;margin-bottom:16px;box-shadow:var(--shadow);
+  }
+  details.adder summary{
+    cursor:pointer;padding:11px 14px;font-size:13.5px;font-weight:500;list-style:none;
+  }
+  details.adder summary::-webkit-details-marker{display:none;}
+  details.adder summary::before{content:"+ ";color:var(--accent);font-weight:600;}
+  details.adder[open] summary::before{content:"– ";}
+  details.adder .adder-body{padding:0 14px 14px;border-top:1px solid var(--line);padding-top:14px;}
+
+  .empty{
+    border:1px dashed var(--line);border-radius:8px;padding:26px 18px;text-align:center;
+    color:var(--muted);font-size:13.5px;
+  }
+  .slider-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .slider-row input[type=range]{flex:1;min-width:160px;accent-color:var(--accent);}
+  .slider-row .lab{font-size:12.5px;color:var(--muted);}
+  .slider-row .val{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--accent-ink);font-variant-numeric:tabular-nums;}
+
+  .because{font-size:12px;color:var(--muted);margin-top:6px;}
+  .because b{color:var(--ink);font-weight:500;}
+  .snippet{font-size:13px;color:var(--muted);margin-top:7px;}
+
+  .note{
+    font-size:12.5px;color:var(--muted);background:var(--panel-2);
+    border-radius:7px;padding:10px 12px;margin-top:16px;border:1px solid var(--line);
+  }
+  .savestate{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:22px;text-align:right;}
+  footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sponsor Scout</h1>
+      <p class="tagline">Retrieval over job postings, scored for visa-sponsorship signal — search, recommendations, and CV matching over your own corpus.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div id="banner"></div>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="browse" aria-selected="true">Browse</button>
+    <button role="tab" data-tab="search" aria-selected="false">Search</button>
+    <button role="tab" data-tab="recs" aria-selected="false">Recommended</button>
+    <button role="tab" data-tab="cv" aria-selected="false">CV match</button>
+    <button role="tab" data-tab="new" aria-selected="false">What's new</button>
+  </nav>
+
+  <div class="panel" id="panel"></div>
+
+  <div class="savestate" id="savestate"></div>
+  <footer>Sponsorship labels come from a keyword heuristic with negation handling — a filter for what to read closely, never a substitute for reading the posting.</footer>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ * Core pipeline — a JS port of rag_pipeline.py.
+ * Chunking, the sponsorship heuristic, and the recommender are ported
+ * line for line. The embedding differs: Python uses TF-IDF + TruncatedSVD,
+ * this uses TF-IDF cosine without the SVD step (at a corpus of tens of
+ * postings the SVD was barely reducing dimensionality anyway, and an
+ * SVD in the browser buys nothing here).
+ * ------------------------------------------------------------------ */
+
+const STOPWORDS = new Set(("a an and are as at be by for from has have he her his in is it its of on or "
+  + "that the to was were will with you your we our us this these those not no if then than so such can "
+  + "could would should i my me they them their there here what which who when where why how all any both "
+  + "each few more most other some only own same too very just now do does did been being had over under "
+  + "about into out up down off again further once because while during before after above below").split(" "));
+
+function tokenize(text){
+  return (String(text).toLowerCase().match(/[a-z0-9][a-z0-9+#.]*/g) || [])
+    .filter(t => t.length > 1 && !STOPWORDS.has(t));
+}
+
+function splitSentences(text){
+  return String(text).replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/).filter(s => s.trim());
+}
+
+function chunkText(text, maxWords = 60, overlapWords = 15){
+  const sentences = splitSentences(text);
+  const chunks = [];
+  let current = [];
+  for (const sent of sentences){
+    const words = sent.split(" ");
+    if (current.length && current.length + words.length > maxWords){
+      chunks.push(current.join(" "));
+      current = current.slice(-overlapWords).concat(words);
+    } else {
+      current = current.concat(words);
+    }
+  }
+  if (current.length) chunks.push(current.join(" "));
+  if (chunks.length) return chunks;
+  return String(text).trim() ? [String(text).trim()] : [];
+}
+
+const POSITIVE_PHRASES = ["will sponsor","can sponsor","able to sponsor","visa sponsorship","sponsor a visa",
+  "sponsor a work permit","approved sponsor","licensed sponsor","registered sponsor","blue card","482",
+  "skilled worker visa","global talent stream","lmia","relocation","work permit sponsorship",
+  "sponsor a skilled visa","sponsor relocation"];
+const NEGATIVE_PHRASES = ["unable to sponsor","not able to offer visa","do not sponsor","no sponsorship",
+  "not currently registered as a sponsor","cannot sponsor","must already have the right to work",
+  "existing work rights required","not able to provide visa sponsorship","not able to sponsor"];
+const AMBIGUOUS_MARKERS = ["unclear","not specified","tbd","to be confirmed","unsure","contact recruiter","recommend contacting"];
+const NEGATION_WORDS = new Set(["no","not","without","never","unclear","unsure"]);
+
+function isNegated(lowerText, phrase, windowSize = 4){
+  const idx = lowerText.indexOf(phrase);
+  if (idx === -1) return false;
+  const preceding = (lowerText.slice(0, idx).match(/[a-z']+/g) || []).slice(-windowSize);
+  return preceding.some(w => NEGATION_WORDS.has(w) || w.endsWith("n't"));
+}
+
+/* Match that respects the START of a word, so the positive phrase
+   "able to sponsor" doesn't fire inside "unable to sponsor". The end is
+   left open so "approved sponsor" still matches "approved sponsors". */
+function phrasePresent(lowerText, phrase){
+  let from = 0, idx;
+  while ((idx = lowerText.indexOf(phrase, from)) !== -1){
+    const before = idx ? lowerText[idx - 1] : " ";
+    if (!/[a-z]/.test(before)) return true;
+    from = idx + 1;
+  }
+  return false;
+}
+
+function sponsorshipSignal(text){
+  const lower = String(text).toLowerCase();
+  const pos = POSITIVE_PHRASES.filter(p => phrasePresent(lower, p) && !isNegated(lower, p));
+  const neg = NEGATIVE_PHRASES.filter(p => phrasePresent(lower, p));
+  const amb = AMBIGUOUS_MARKERS.filter(p => phrasePresent(lower, p));
+  let label, tone;
+  if (pos.length && !neg.length){ label = "likely sponsoring"; tone = "ok"; }
+  else if (neg.length && !pos.length){ label = "likely NOT sponsoring"; tone = "no"; }
+  else if (pos.length && neg.length){ label = "mixed signal — verify manually"; tone = "maybe"; }
+  else if (amb.length){ label = "unclear — verify manually"; tone = "maybe"; }
+  else { label = "no sponsorship language"; tone = "none"; }
+  return { label, tone, positive: pos, negative: neg };
+}
+
+const BOOST = { ok: 1.0, maybe: 0.5, none: 0.0, no: -1.0 };
+const BOOST_WEIGHT = 0.15;
+
+/* --- sparse vector helpers --- */
+function l2norm(vec){
+  let s = 0;
+  for (const x of vec.values()) s += x * x;
+  s = Math.sqrt(s) || 1;
+  const out = new Map();
+  for (const [k, x] of vec) out.set(k, x / s);
+  return out;
+}
+function dot(a, b){
+  if (a.size > b.size){ const t = a; a = b; b = t; }
+  let s = 0;
+  for (const [k, x] of a){ const y = b.get(k); if (y !== undefined) s += x * y; }
+  return s;
+}
+function addInto(target, vec, weight){
+  for (const [k, x] of vec) target.set(k, (target.get(k) || 0) + x * weight);
+  return target;
+}
+
+function buildIndex(postings){
+  const chunks = [];
+  for (const p of postings){
+    for (const t of chunkText(p.text)) chunks.push({ docId: p.id, text: t });
+  }
+  const termFreqs = [];
+  const docFreq = new Map();
+  for (const c of chunks){
+    const tf = new Map();
+    for (const tok of tokenize(c.text)) tf.set(tok, (tf.get(tok) || 0) + 1);
+    for (const tok of tf.keys()) docFreq.set(tok, (docFreq.get(tok) || 0) + 1);
+    termFreqs.push(tf);
+  }
+  const N = chunks.length || 1;
+  const idf = new Map();
+  for (const [tok, df] of docFreq) idf.set(tok, Math.log((1 + N) / (1 + df)) + 1);
+
+  const chunkVecs = termFreqs.map(tf => {
+    const v = new Map();
+    for (const [tok, count] of tf){
+      const w = idf.get(tok);
+      if (w) v.set(tok, (1 + Math.log(count)) * w);
+    }
+    return l2norm(v);
+  });
+
+  const docVecs = new Map(), docTexts = new Map(), docMeta = new Map();
+  for (const p of postings){ docMeta.set(p.id, p); docTexts.set(p.id, ""); }
+  const acc = new Map(), counts = new Map();
+  chunks.forEach((c, i) => {
+    if (!acc.has(c.docId)){ acc.set(c.docId, new Map()); counts.set(c.docId, 0); }
+    addInto(acc.get(c.docId), chunkVecs[i], 1);
+    counts.set(c.docId, counts.get(c.docId) + 1);
+    docTexts.set(c.docId, (docTexts.get(c.docId) + " " + c.text).trim());
+  });
+  for (const [docId, v] of acc) docVecs.set(docId, l2norm(v));
+
+  return { chunks, chunkVecs, idf, docVecs, docTexts, docMeta };
+}
+
+function embedText(text, idf){
+  const tf = new Map();
+  for (const tok of tokenize(text)) tf.set(tok, (tf.get(tok) || 0) + 1);
+  const v = new Map();
+  for (const [tok, count] of tf){
+    const w = idf.get(tok);
+    if (w) v.set(tok, (1 + Math.log(count)) * w);
+  }
+  return l2norm(v);
+}
+
+function search(index, queryText, topK = 6){
+  if (!index.chunks.length) return [];
+  const q = embedText(queryText, index.idf);
+  return index.chunks
+    .map((c, i) => ({ score: dot(q, index.chunkVecs[i]), chunk: c.text, doc: index.docMeta.get(c.docId) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}
+
+function tasteVector(index, viewHistory, cvVec, cvWeight){
+  const viewed = viewHistory.filter(id => index.docVecs.has(id));
+  let viewVec = null;
+  if (viewed.length){
+    const n = viewed.length;
+    const weights = viewed.map((_, i) => Math.pow(0.5, (n - 1 - i) / 3));
+    const total = weights.reduce((a, b) => a + b, 0);
+    const acc = new Map();
+    viewed.forEach((id, i) => addInto(acc, index.docVecs.get(id), weights[i] / total));
+    viewVec = l2norm(acc);
+  }
+  if (viewVec && cvVec && cvWeight > 0){
+    const acc = new Map();
+    addInto(acc, viewVec, 1 - cvWeight);
+    addInto(acc, cvVec, cvWeight);
+    return { vec: l2norm(acc), viewed };
+  }
+  if (viewVec) return { vec: viewVec, viewed };
+  if (cvVec) return { vec: cvVec, viewed: [] };
+  return { vec: null, viewed: [] };
+}
+
+function recommend(index, viewHistory, cvVec, cvWeight, topK = 8){
+  const { vec, viewed } = tasteVector(index, viewHistory, cvVec, cvWeight);
+  if (!vec) return [];
+  const viewedSet = new Set(viewed);
+  const rows = [];
+  for (const [docId, dv] of index.docVecs){
+    if (viewedSet.has(docId)) continue;
+    const similarity = dot(vec, dv);
+    const sig = sponsorshipSignal(index.docTexts.get(docId));
+    let because = "your CV";
+    if (viewed.length){
+      let best = viewed[0], bestScore = -Infinity;
+      for (const v of viewed){
+        const s = dot(index.docVecs.get(v), dv);
+        if (s > bestScore){ bestScore = s; best = v; }
+      }
+      because = (index.docMeta.get(best) || {}).company || "a viewed posting";
+    }
+    rows.push({
+      doc: index.docMeta.get(docId), similarity, sig,
+      score: similarity + (BOOST[sig.tone] || 0) * BOOST_WEIGHT, because
+    });
+  }
+  return rows.sort((a, b) => b.score - a.score).slice(0, topK);
+}
+
+function cvMatch(index, cvVec, topK = 10){
+  if (!cvVec) return [];
+  const rows = [];
+  for (const [docId, dv] of index.docVecs){
+    const similarity = dot(cvVec, dv);
+    const sig = sponsorshipSignal(index.docTexts.get(docId));
+    rows.push({ doc: index.docMeta.get(docId), similarity, sig,
+      score: similarity + (BOOST[sig.tone] || 0) * BOOST_WEIGHT });
+  }
+  return rows.sort((a, b) => b.score - a.score).slice(0, topK);
+}
+
+/* ------------------------------------------------------------------ *
+ * Sample corpus — synthetic, for a populated first look.
+ * ------------------------------------------------------------------ */
+const SAMPLES = [
+  ["Nimbus Data Labs","AI Engineer","Australia","2026-08-01","Nimbus Data Labs is hiring an AI Engineer to join our Sydney-based ML platform team. We are an approved sponsor and can support a Temporary Skill Shortage (subclass 482) visa for the right candidate, including offshore applicants relocating from overseas. You'll work on RAG pipelines, vector search, and LLM evaluation. 3+ years experience with Python and ML frameworks required."],
+  ["Aurora Analytics Pty Ltd","Machine Learning Engineer","Australia","2026-07-18","Aurora Analytics is expanding our applied ML team in Melbourne. Unfortunately, we are not able to offer visa sponsorship at this time and can only consider candidates with existing Australian work rights. Strong background in NLP and production ML systems."],
+  ["Harbor Robotics","Automation & AI Engineer","Australia","2026-08-20","Harbor Robotics builds warehouse automation software. We welcome applications from international candidates and will sponsor a skilled visa (subclass 482 or equivalent) for exceptional offshore hires in robotics, computer vision, or AI engineering."],
+  ["Delta Cloud Systems","AI/ML Engineer","Netherlands","2026-06-30","Delta Cloud Systems (Amsterdam) is a recognized sponsor under the Dutch highly skilled migrant scheme. We actively sponsor residence and work permits for offshore hires joining our AI engineering team, covering relocation costs for the employee."],
+  ["Nordwind Systeme GmbH","Machine Learning Engineer","Germany","2026-07-02","Nordwind Systeme in Berlin is hiring. We support the EU Blue Card process for qualified non-EU applicants and have sponsored several offshore engineers in the past two years for our computer vision team."],
+  ["Thistle & Byte","AI Engineer","United Kingdom","2026-05-14","Thistle & Byte is a licensed Skilled Worker sponsor based in London. This role is eligible for Skilled Worker visa sponsorship and we regularly hire offshore candidates relocating from South Asia and the Middle East."],
+  ["Cliffside Softworks","ML Platform Engineer","Ireland","2026-08-05","Cliffside Softworks (Dublin) is not currently registered as a sponsor for employment permits and can only hire candidates who already have the right to work in Ireland or the EU."],
+  ["Maple Ridge AI","AI Engineer","Canada","2026-08-22","Maple Ridge AI in Toronto participates in the Global Talent Stream and can support a work permit plus LMIA sponsorship for strong offshore candidates with RAG, vector database, and LLM production experience."],
+  ["Quillfeather Studio","AI/Automation Engineer","Australia","2026-09-01","Quillfeather Studio is a small Brisbane startup building automation tooling with n8n and LLM integrations. No mention of visa sponsorship in this posting; sponsorship status unclear, recommend contacting recruiter directly to confirm."],
+  ["Silverline Cognition","Senior AI Engineer","Australia","2026-07-27","Silverline Cognition is an approved 482 and ENS sponsor. We have a dedicated immigration team supporting relocation for offshore AI and automation engineering hires, including visa costs and a relocation allowance."],
+  ["Ferngully Data Co","AI Engineer","Germany","2026-06-11","Ferngully Data Co in Munich requires candidates to already hold an EU work permit. We do not sponsor visas for this position."],
+  ["Brightcask Technologies","ML / Automation Engineer","Netherlands","2026-08-14","Brightcask Technologies (Rotterdam) offers visa sponsorship and 30% ruling support for qualifying international hires joining our AI automation team. Experience with vector databases, chunking pipelines, and RAG systems is a strong plus."]
+].map((r, i) => ({ id: "sample-" + String(i + 1).padStart(3, "0"), company: r[0], role_title: r[1],
+  country: r[2], date_posted: r[3], source: "", text: r[4] }));
+
+/* ------------------------------------------------------------------ *
+ * State + persistence
+ * ------------------------------------------------------------------ */
+const STATE = { stored: [], cvText: "", viewHistory: [], seenIds: [], tab: "browse",
+  query: "AI engineer roles with 482 visa sponsorship in Australia", cvWeight: 0.4 };
+let DB = null;
+let INDEX = null;
+let cvVec = null;
+
+const isDemo = () => STATE.stored.length === 0;
+const postings = () => isDemo() ? SAMPLES : STATE.stored;
+
+function rebuild(){
+  INDEX = buildIndex(postings());
+  cvVec = STATE.cvText.trim() ? embedText(STATE.cvText, INDEX.idf) : null;
+}
+
+async function saveProfile(){
+  if (!DB) return;
+  try {
+    await DB.doc("state/profile").set({
+      cvText: STATE.cvText, viewHistory: STATE.viewHistory, seenIds: STATE.seenIds
+    });
+  } catch (e){ setSaveState("couldn't save profile"); }
+}
+
+async function savePosting(p){
+  if (!DB){ STATE.stored.push(p); return; }
+  try { await DB.collection("postings").doc(p.id).set(p); }
+  catch (e){ STATE.stored.push(p); setSaveState("couldn't save posting — kept in this tab only"); }
+}
+
+async function deletePosting(id){
+  if (!DB){ STATE.stored = STATE.stored.filter(p => p.id !== id); return; }
+  try { await DB.collection("postings").doc(id).delete(); }
+  catch (e){ setSaveState("couldn't delete"); }
+}
+
+function setSaveState(msg){
+  const el = document.getElementById("savestate");
+  if (el) el.textContent = msg;
+}
+
+/* ------------------------------------------------------------------ *
+ * Rendering
+ * ------------------------------------------------------------------ */
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+function pill(sig){ return `<span class="pill ${sig.tone}">${esc(sig.label)}</span>`; }
+
+function renderStats(){
+  const list = postings();
+  const sponsoring = list.filter(p => sponsorshipSignal(p.text).tone === "ok").length;
+  const countries = new Set(list.map(p => p.country).filter(Boolean)).size;
+  const viewed = new Set(STATE.viewHistory).size;
+  document.getElementById("stats").innerHTML = [
+    ["Postings", list.length], ["Sponsoring", sponsoring],
+    ["Countries", countries], ["Viewed", viewed]
+  ].map(([k, v]) => `<div class="stat"><span class="v">${v}</span><span class="k">${k}</span></div>`).join("");
+}
+
+function renderBanner(){
+  const el = document.getElementById("banner");
+  if (!isDemo()){ el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="banner">
+    <div class="grow"><b>Sample data.</b> These 12 postings are synthetic — made-up companies written to
+    demonstrate the pipeline, not real leads. Add a real posting and they disappear.</div>
+    <button class="btn" id="import-samples">Keep samples in my corpus</button>
+  </div>`;
+  document.getElementById("import-samples").onclick = async () => {
+    for (const p of SAMPLES) await savePosting({ ...p, id: p.id.replace("sample", "kept") });
+    if (!DB) refresh();
+  };
+}
+
+function postingRow(p, extraHtml = ""){
+  const sig = sponsorshipSignal(p.text);
+  const open = STATE.openId === p.id;
+  return `<div class="row ${sig.tone}">
+    <div class="row-head">
+      <div>
+        <div class="row-title">${esc(p.company)}</div>
+        <div class="row-sub">${esc(p.role_title)} · ${esc(p.country)}${p.date_posted ? " · " + esc(p.date_posted) : ""}</div>
+      </div>
+      <div class="row-actions">${pill(sig)}
+        <button class="btn" data-open="${esc(p.id)}">${open ? "Close" : "Open"}</button>
+      </div>
+    </div>
+    ${extraHtml}
+    ${open ? `<div class="row-body">${esc(p.text)}
+      ${sig.positive.length || sig.negative.length ? `<div class="ev">matched: ${esc(sig.positive.concat(sig.negative).join(", "))}</div>` : ""}
+      ${p.source ? `<div class="ev">source: ${esc(p.source)}</div>` : ""}
+      ${isDemo() ? "" : `<div style="margin-top:10px"><button class="btn danger" data-del="${esc(p.id)}">Remove</button></div>`}
+    </div>` : ""}
+  </div>`;
+}
+
+function renderBrowse(){
+  const list = postings();
+  const countries = ["All"].concat([...new Set(list.map(p => p.country).filter(Boolean))].sort());
+  return `<h2>Your corpus</h2>
+    <p class="hint">Opening a posting records a view — that's what the recommender learns from. Nothing is recorded by scrolling.</p>
+    <details class="adder"><summary>Add a posting</summary><div class="adder-body">
+      <div class="grid2">
+        <label class="fld"><span>Company</span><input type="text" id="f-company" placeholder="Acme Pty Ltd"></label>
+        <label class="fld"><span>Role title</span><input type="text" id="f-role" placeholder="AI Engineer"></label>
+        <label class="fld"><span>Country</span><input type="text" id="f-country" placeholder="Australia"></label>
+        <label class="fld"><span>Source URL</span><input type="text" id="f-source" placeholder="https://..."></label>
+      </div>
+      <label class="fld"><span>Full posting text</span><textarea id="f-text" rows="5" placeholder="Paste the whole posting, including anything about sponsorship or work rights."></textarea></label>
+      <button class="btn primary" id="f-add">Add posting</button>
+    </div></details>
+    <div class="toolbar">
+      <select id="country-filter" style="width:auto">${countries.map(c =>
+        `<option${c === (STATE.country || "All") ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>
+      <div class="spacer"></div>
+      ${STATE.viewHistory.length ? `<button class="btn quiet" id="clear-views">Clear view history (${STATE.viewHistory.length})</button>` : ""}
+    </div>
+    ${list.filter(p => !STATE.country || STATE.country === "All" || p.country === STATE.country)
+        .map(p => postingRow(p)).join("") || `<div class="empty">No postings yet.</div>`}`;
+}
+
+function renderSearch(){
+  const results = STATE.query.trim() ? search(INDEX, STATE.query, 8) : [];
+  return `<h2>Search</h2>
+    <p class="hint">Retrieves the closest chunk of any posting, not whole documents — so a long posting surfaces on the paragraph that actually matches.</p>
+    <label class="fld"><span>Query</span><input type="search" id="q" value="${esc(STATE.query)}" placeholder="e.g. Blue Card sponsorship for ML engineers in Berlin"></label>
+    ${results.length ? results.map(r => `<div class="row ${r.sig ? r.sig.tone : sponsorshipSignal(r.chunk).tone}">
+      <div class="row-head">
+        <div><div class="row-title">${esc(r.doc ? r.doc.company : "?")}</div>
+          <div class="row-sub">${esc(r.doc ? r.doc.role_title : "")} · ${esc(r.doc ? r.doc.country : "")}</div></div>
+        <div class="row-actions"><span class="score">${r.score.toFixed(2)}</span>${pill(sponsorshipSignal(r.chunk))}</div>
+      </div>
+      <div class="snippet">${esc(r.chunk)}</div>
+    </div>`).join("") : `<div class="empty">Type a query to search.</div>`}
+    <div class="note">The score ranks similarity to your wording — it can't tell a "yes" from a "no" on sponsorship. The badge is the part that answers that.</div>`;
+}
+
+function renderRecs(){
+  const hasCv = !!cvVec;
+  const rows = recommend(INDEX, STATE.viewHistory, cvVec, hasCv ? STATE.cvWeight : 0, 8);
+  return `<h2>Recommended next</h2>
+    <p class="hint">Built from a recency-weighted average of what you've opened — a recent view counts more than an older one — then nudged by sponsorship signal so a clear "no" can't outrank a clear "yes" on content similarity alone.</p>
+    <div class="slider-row">
+      <span class="lab">Viewed</span>
+      <input type="range" id="cvw" min="0" max="1" step="0.1" value="${STATE.cvWeight}" ${hasCv ? "" : "disabled"}>
+      <span class="lab">CV</span>
+      <span class="val">${hasCv ? STATE.cvWeight.toFixed(1) : "no CV"}</span>
+    </div>
+    ${rows.length ? rows.map(r => `<div class="row ${r.sig.tone}">
+      <div class="row-head">
+        <div><div class="row-title">${esc(r.doc.company)}</div>
+          <div class="row-sub">${esc(r.doc.role_title)} · ${esc(r.doc.country)}</div></div>
+        <div class="row-actions"><span class="score">${r.score.toFixed(2)}</span>${pill(r.sig)}
+          <button class="btn" data-open="${esc(r.doc.id)}">Open</button></div>
+      </div>
+      <div class="because">Because you looked at <b>${esc(r.because)}</b></div>
+      ${STATE.openId === r.doc.id ? `<div class="row-body">${esc(r.doc.text)}</div>` : ""}
+    </div>`).join("") : `<div class="empty">Open a posting on the Browse tab, or load your CV — the recommender needs one of the two to have anything to go on.</div>`}`;
+}
+
+function renderCv(){
+  const rows = cvMatch(INDEX, cvVec, 10);
+  return `<h2>CV match</h2>
+    <p class="hint">Your CV is embedded into the same vector space as the postings, so it can rank them directly — useful before you've opened anything. Stored with this page, visible only to you.</p>
+    <div class="toolbar">
+      <input type="file" id="cv-file" accept=".txt,.md,.pdf" style="width:auto;border:none;padding:0;font-size:12.5px">
+      ${STATE.cvText ? `<div class="spacer"></div><button class="btn quiet" id="cv-clear">Remove CV</button>` : ""}
+    </div>
+    <label class="fld"><span>CV text</span><textarea id="cv-text" rows="7" placeholder="Paste your CV here, or upload a .txt / .pdf above.">${esc(STATE.cvText)}</textarea></label>
+    <div class="toolbar"><button class="btn primary" id="cv-save">Save CV</button>
+      <span class="lab" style="font-size:12.5px;color:var(--muted)">${STATE.cvText ? STATE.cvText.length + " characters loaded" : "no CV loaded"}</span></div>
+    ${rows.length ? `<h2 style="margin-top:22px">Ranked against your CV</h2>` + rows.map(r => `<div class="row ${r.sig.tone}">
+      <div class="row-head">
+        <div><div class="row-title">${esc(r.doc.company)}</div>
+          <div class="row-sub">${esc(r.doc.role_title)} · ${esc(r.doc.country)}</div></div>
+        <div class="row-actions"><span class="score">${r.score.toFixed(2)}</span>${pill(r.sig)}</div>
+      </div></div>`).join("") : ""}`;
+}
+
+function renderNew(){
+  const unseen = postings().filter(p => !STATE.seenIds.includes(p.id));
+  const scored = unseen.map(p => {
+    const { vec } = tasteVector(INDEX, STATE.viewHistory, cvVec, cvVec ? STATE.cvWeight : 0);
+    const dv = INDEX.docVecs.get(p.id);
+    return { doc: p, sig: sponsorshipSignal(p.text), score: vec && dv ? dot(vec, dv) : null };
+  }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+
+  return `<h2>New since your last check</h2>
+    <p class="hint">The diff step behind a job alert: everything you haven't marked seen, ranked against your CV and view history. In the deployed version this is what a scheduled job emails you.</p>
+    ${scored.length ? `<div class="toolbar"><button class="btn primary" id="mark-seen">Mark all ${scored.length} as seen</button></div>`
+      + scored.map(r => `<div class="row ${r.sig.tone}">
+        <div class="row-head">
+          <div><div class="row-title">${esc(r.doc.company)}</div>
+            <div class="row-sub">${esc(r.doc.role_title)} · ${esc(r.doc.country)}</div></div>
+          <div class="row-actions">${r.score !== null ? `<span class="score">${r.score.toFixed(2)}</span>` : ""}${pill(r.sig)}
+            <button class="btn" data-open="${esc(r.doc.id)}">Open</button></div>
+        </div>
+        ${STATE.openId === r.doc.id ? `<div class="row-body">${esc(r.doc.text)}</div>` : ""}
+      </div>`).join("")
+      : `<div class="empty">Nothing new since your last check.</div>`}`;
+}
+
+function render(){
+  rebuild();
+  renderStats();
+  renderBanner();
+  const panel = document.getElementById("panel");
+  panel.innerHTML = ({ browse: renderBrowse, search: renderSearch, recs: renderRecs,
+    cv: renderCv, new: renderNew })[STATE.tab]();
+  wire();
+}
+
+function refresh(){ render(); }
+
+/* ------------------------------------------------------------------ *
+ * Events
+ * ------------------------------------------------------------------ */
+function wire(){
+  document.querySelectorAll("[data-open]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.open;
+      if (STATE.openId === id){ STATE.openId = null; render(); return; }
+      STATE.openId = id;
+      STATE.viewHistory = STATE.viewHistory.filter(v => v !== id).concat(id).slice(-40);
+      render();
+      saveProfile();
+    };
+  });
+  document.querySelectorAll("[data-del]").forEach(btn => {
+    btn.onclick = async () => { await deletePosting(btn.dataset.del); if (!DB) render(); };
+  });
+
+  const q = document.getElementById("q");
+  if (q) q.oninput = () => {
+    STATE.query = q.value;
+    const at = q.selectionStart;
+    render();
+    const nq = document.getElementById("q");
+    if (nq){ nq.focus(); nq.setSelectionRange(at, at); }
+  };
+
+  const cf = document.getElementById("country-filter");
+  if (cf) cf.onchange = () => { STATE.country = cf.value; render(); };
+
+  const cw = document.getElementById("cvw");
+  if (cw) cw.oninput = () => { STATE.cvWeight = parseFloat(cw.value); render(); };
+
+  const clearViews = document.getElementById("clear-views");
+  if (clearViews) clearViews.onclick = () => { STATE.viewHistory = []; render(); saveProfile(); };
+
+  const add = document.getElementById("f-add");
+  if (add) add.onclick = async () => {
+    const company = document.getElementById("f-company").value.trim();
+    const text = document.getElementById("f-text").value.trim();
+    if (!company || !text){ alert("Company and posting text are both required."); return; }
+    await savePosting({
+      id: "p-" + Date.now().toString(36),
+      company,
+      role_title: document.getElementById("f-role").value.trim(),
+      country: document.getElementById("f-country").value.trim(),
+      source: document.getElementById("f-source").value.trim(),
+      date_posted: new Date().toISOString().slice(0, 10),
+      text
+    });
+    if (!DB) render();
+  };
+
+  const cvSave = document.getElementById("cv-save");
+  if (cvSave) cvSave.onclick = () => {
+    STATE.cvText = document.getElementById("cv-text").value;
+    render(); saveProfile();
+  };
+  const cvClear = document.getElementById("cv-clear");
+  if (cvClear) cvClear.onclick = () => { STATE.cvText = ""; render(); saveProfile(); };
+
+  const cvFile = document.getElementById("cv-file");
+  if (cvFile) cvFile.onchange = async () => {
+    const file = cvFile.files[0];
+    if (!file) return;
+    try {
+      STATE.cvText = file.name.toLowerCase().endsWith(".pdf")
+        ? await readPdf(file) : await file.text();
+      render(); saveProfile();
+    } catch (e){
+      alert("Couldn't read that file — paste the text into the box instead.");
+    }
+  };
+
+  const markSeen = document.getElementById("mark-seen");
+  if (markSeen) markSeen.onclick = () => {
+    STATE.seenIds = [...new Set(STATE.seenIds.concat(postings().map(p => p.id)))];
+    render(); saveProfile();
+  };
+}
+
+async function readPdf(file){
+  if (!window.pdfjsLib) throw new Error("pdf.js unavailable");
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let out = "";
+  for (let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    out += content.items.map(it => it.str).join(" ") + "\n";
+  }
+  return out.trim();
+}
+
+document.getElementById("tabs").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-tab]");
+  if (!btn) return;
+  STATE.tab = btn.dataset.tab;
+  document.querySelectorAll("#tabs button").forEach(b =>
+    b.setAttribute("aria-selected", String(b === btn)));
+  render();
+});
+
+/* ------------------------------------------------------------------ *
+ * Boot — render immediately, light up persistence when it resolves.
+ * ------------------------------------------------------------------ */
+render();
+setSaveState("checking for saved data…");
+
+(async () => {
+  const db = await (window.claude && window.claude.use ? window.claude.use("db") : Promise.resolve(null));
+  if (!db){ setSaveState("not saving — changes stay in this browser tab"); return; }
+  DB = db;
+  setSaveState("saved to this page");
+  db.collection("postings").onSnapshot(snap => {
+    STATE.stored = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+    render();
+  }, () => setSaveState("saving unavailable right now"));
+  db.doc("state/profile").onSnapshot(snap => {
+    const data = snap.exists ? (snap.data() || {}) : {};
+    STATE.cvText = typeof data.cvText === "string" ? data.cvText : STATE.cvText;
+    STATE.viewHistory = Array.isArray(data.viewHistory) ? data.viewHistory : STATE.viewHistory;
+    STATE.seenIds = Array.isArray(data.seenIds) ? data.seenIds : STATE.seenIds;
+    render();
+  }, () => {});
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
