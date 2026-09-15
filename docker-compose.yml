@@ -1,0 +1,59 @@
+# One image, three ways to run it.
+#
+#   docker compose up api              the FastAPI service on :8000
+#   docker compose up app              the Streamlit UI on :8501
+#   docker compose run --rm agent      one ingestion run, then exit
+#   docker compose run --rm doctor     check every source is reachable
+#
+# ./data is mounted into every service, so the SQLite store lives on your
+# machine rather than inside a container. Delete a container and your
+# postings survive; that's the whole point of the mount.
+
+services:
+  api:
+    build: .
+    image: sponsor-scout:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      SPONSOR_SCOUT_DB: /app/data/postings.db
+      # Lock this down before exposing the API anywhere public.
+      SPONSOR_SCOUT_ORIGINS: "*"
+    restart: unless-stopped
+
+  app:
+    build: .
+    image: sponsor-scout:latest
+    command: >
+      streamlit run app.py
+      --server.port=8501
+      --server.address=0.0.0.0
+      --browser.gatherUsageStats=false
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      SPONSOR_SCOUT_DB: /app/data/postings.db
+
+  # Run-to-completion, not a long-running service — so it sits behind a
+  # profile and won't start with `docker compose up`.
+  agent:
+    build: .
+    image: sponsor-scout:latest
+    profiles: ["tools"]
+    command: python -m sponsor_scout.agent run --limit 50
+    volumes:
+      - ./data:/app/data
+    environment:
+      SPONSOR_SCOUT_DB: /app/data/postings.db
+
+  doctor:
+    build: .
+    image: sponsor-scout:latest
+    profiles: ["tools"]
+    command: python -m sponsor_scout.agent doctor
+    volumes:
+      - ./data:/app/data

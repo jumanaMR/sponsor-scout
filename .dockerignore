@@ -1,0 +1,30 @@
+# Keep the build context small and the image clean.
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Notebooks and tests aren't needed at runtime
+notebooks
+tests
+scripts
+
+# Never bake personal data or a local database into an image
+*.db
+*.sqlite3
+data/*.csv
+!data/sponsor_leads_template.csv
+my_cv.*
+cv.*
+*_cv.pdf
+*_cv.docx
+digest.txt
+seen_postings.json
+sponsorship_report.csv
+.env
+.env.*

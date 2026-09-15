@@ -110,6 +110,25 @@ rag.record_view("syn-001")                   # you opened this posting
 print(rag.recommend_next(cv_weight=0.4))     # 60% view history, 40% CV
 ```
 
+### Docker
+
+```bash
+docker compose up api                 # API on :8000
+docker compose up app                 # Streamlit UI on :8501
+docker compose run --rm doctor        # check the sources are reachable
+docker compose run --rm agent         # one ingestion run
+```
+
+`./data` is mounted into every service, so the SQLite store lives on your machine rather than inside a container — delete the container, keep your postings.
+
+One caveat worth understanding rather than trusting blindly: **a container is only as reproducible as what it installs.** `pyproject.toml` declares lower bounds (`>=`), so rebuilding this image months from now can resolve to different versions of pandas or scikit-learn than you have today. If you want genuinely identical environments across two laptops, the fix isn't Docker on its own — it's a lock file:
+
+```bash
+pip freeze > requirements.lock.txt     # on a machine where it works
+```
+
+then install from that in the Dockerfile. Docker guarantees the *same image* runs the same everywhere; only pinning guarantees the same image gets *built* twice.
+
 ### Adding real postings
 
 `data/sponsor_leads_template.csv` has the columns the pipeline expects — `company, role_title, country, source, date_posted, text`. Paste in the full text of real postings; the more of the original wording you keep, the better both retrieval and the sponsorship heuristic work.
