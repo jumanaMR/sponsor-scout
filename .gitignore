@@ -10,6 +10,12 @@ data/*.csv
 seen_postings.json
 sponsorship_report.csv
 
+# Agent store — the scheduled workflow commits this with `git add -f`;
+# keep it out of casual local commits.
+*.db
+*.sqlite3
+digest.txt
+
 # --- Python ----------------------------------------------------------------
 __pycache__/
 *.py[cod]

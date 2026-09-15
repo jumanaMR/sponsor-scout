@@ -1,0 +1,76 @@
+name: Ingestion agent
+
+# Free production scheduling: GitHub runs the agent on a timer, commits the
+# updated store back to the repo, and opens an issue when it finds new
+# sponsoring roles. No server, no hosting bill, and the run history is the
+# audit log.
+#
+# The store is committed so state survives between runs — fine at this size.
+# When the database outgrows that (or you'd rather it wasn't in git), move it
+# to S3 or Postgres and drop the commit step.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1,4"   # Mondays and Thursdays, 06:00 UTC (09:00 in Doha)
+  workflow_dispatch:         # and whenever you click Run workflow
+    inputs:
+      limit:
+        description: "Max postings per source"
+        default: "50"
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Check sources are reachable
+        continue-on-error: true
+        run: python -m sponsor_scout.agent doctor
+
+      - name: Run the agent
+        run: |
+          python -m sponsor_scout.agent run \
+            --limit "${{ github.event.inputs.limit || 50 }}" \
+            > digest.txt
+          cat digest.txt
+
+      - name: Commit the updated store
+        run: |
+          git config user.name  "sponsor-scout-agent"
+          git config user.email "noreply@github.com"
+          git add -f data/postings.db
+          git diff --staged --quiet || git commit -m "agent: ingest run $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Open an issue if anything new is sponsoring
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const digest = fs.readFileSync('digest.txt', 'utf8');
+            if (!digest.includes('New and likely sponsoring')) {
+              core.info('Nothing new worth an issue.');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `New sponsoring roles — ${new Date().toISOString().slice(0, 10)}`,
+              body: '```\n' + digest + '\n```',
+              labels: ['agent-run'],
+            });

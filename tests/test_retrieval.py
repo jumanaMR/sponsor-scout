@@ -30,6 +30,19 @@ def test_index_covers_every_posting(rag):
     assert rag.vectors.shape[0] == len(rag.chunks)
 
 
+@pytest.mark.parametrize("n_postings", [1, 2, 3])
+def test_a_tiny_corpus_still_builds(n_postings):
+    """REGRESSION: with fewer than ~5 chunks, max_df=0.95 rounds down below
+    min_df=1 and sklearn raises. A near-empty corpus is a real state — a
+    freshly-seeded store, or a filter that matched one company — and it must
+    not 500 the search endpoint."""
+    index = SponsorshipRAG(n_components=50)
+    index.add_documents(SAMPLE_POSTINGS[:n_postings])
+    index.build_index()
+    assert index.vectors.shape[0] >= 1
+    assert len(index.query("visa sponsorship", top_k=1)) == 1
+
+
 def test_query_before_build_is_an_error():
     empty = SponsorshipRAG()
     empty.add_documents(SAMPLE_POSTINGS[:2])

@@ -34,6 +34,44 @@ Built to solve a specific problem: as an offshore applicant, most of the job pos
 
 **New-posting watcher** persists which postings you've already seen and reports only what's new, scored the same way. This is the diff step behind a job alert — the piece a scheduled job would call before emailing you a digest.
 
+## The agent
+
+Postings come from free, employer-direct sources — no API key, no per-result billing:
+
+| Source | What it is | Coverage |
+|---|---|---|
+| **Greenhouse / Lever / Ashby** | The public job-board endpoint every company on those ATSs serves for its own careers page. You choose the companies. | Worldwide, bounded only by your company list |
+| **Arbeitnow** | Free aggregator over the same ATSs, with its own `visa_sponsorship` flag | Europe + UK |
+
+This is deliberately what the paid job-data APIs resell. Their product is largely this plus a company list and an invoice.
+
+```bash
+python -m sponsor_scout.agent doctor        # check every source is reachable
+python -m sponsor_scout.agent run --limit 50
+python -m sponsor_scout.agent report --country Australia
+```
+
+One run polls every source, normalises each posting to one shape, classifies its sponsorship language, stores it, and reports **only what it has never seen before** — so a scheduled run doesn't re-alert you about the same job twice. A source being down is logged and skipped rather than killing the run.
+
+Where a source publishes its own visa flag, the agent flags any posting where that flag *disagrees* with what the text says. Those rows are the most useful output it produces: they're exactly where an automated label is most likely wrong.
+
+**Run `doctor` first.** The adapters were written in an environment with no network access to these APIs, so the field mappings were unverified until they ran somewhere real. `doctor` hits each source and tells you whether the fields that matter actually came through — particularly description length, which is the one that fails silently: if an ATS renames its description field, everything still "works" but every posting classifies as *no sponsorship language*.
+
+### Running it in production, for free
+
+`.github/workflows/agent.yml` runs the agent on a schedule in GitHub Actions, commits the updated store, and opens an issue when it finds new sponsoring roles. No server, no hosting bill, and the workflow run history doubles as the audit log.
+
+## The API
+
+```bash
+pip install fastapi uvicorn
+uvicorn sponsor_scout.api:app --reload
+```
+
+`/postings?country=Australia&label=likely+sponsoring`, `/search?q=...`, `/recommend?viewed=...`, `/countries`, `/stats`, and `POST /signal` for classifying arbitrary pasted text.
+
+Ingestion and serving are separate processes on purpose: ingestion is slow, periodic, and allowed to fail; serving is fast, constant, and mustn't. A request should never be waiting on a third-party job board.
+
 ## Quickstart
 
 ```bash
@@ -82,6 +120,10 @@ Your filled-in CSVs and your CV are gitignored. Don't commit them — they're pe
 
 ```
 sponsor_scout/       the pipeline — chunking, embedding, index, heuristic, recommender
+  sources/           one adapter per free job-data provider
+  agent.py           the ingestion agent + CLI
+  store.py           SQLite posting store
+  api.py             FastAPI service
 app.py               Streamlit UI over the pipeline
 webapp/index.html    standalone browser version (JS port, no Python needed)
 notebooks/           the pipeline end to end, with commentary
@@ -110,6 +152,12 @@ Both were found by reading output, not by the code looking wrong, and both are t
 
 The second one is why the first fix wasn't enough on its own: the same class of bug had two different surfaces, and only output review caught either.
 
+Two more, from building the agent, pinned in `tests/test_agent.py` and `tests/test_retrieval.py`:
+
+3. **A falsy store.** `JobAgent.__init__` did `store or PostingStore()`. `PostingStore` defines `__len__`, so an *empty* store is falsy — the agent silently discarded the database it was handed and wrote to the default path instead. It surfaced only as a wrong number: "0 new" on a run that had just ingested everything.
+
+4. **A corpus too small to index.** `max_df=0.95` drops terms appearing in over 95% of chunks; on a one- or two-document corpus that threshold rounds below `min_df=1` and scikit-learn raises. A near-empty store is a real state — freshly seeded, or a filter that matched one company — and it was returning a 500 from `/search`.
+
 ## Limitations
 
 - **The sample postings are synthetic.** The twelve entries in `sponsor_scout/sample_data.py` are invented companies written to exercise the pipeline. They are not real leads and must not be read as claims about any real company's sponsorship policy.
@@ -123,10 +171,12 @@ The second one is why the first fix wasn't enough on its own: the same class of 
 |---|---|---|
 | 0 | done | Prototype: chunking, retrieval, recommender, CV matching, watcher |
 | 1 | done | Package layout, pytest suite, CI |
-| 2 | next | pgvector on Postgres + a FastAPI layer over the existing methods |
-| 3 | | Real ingestion from a compliant source (Adzuna API, or parsing your own job-alert emails) |
-| 4 | | Deploy: Terraform for RDS / Lambda / API Gateway / EventBridge / SES, so the watcher emails a digest on a schedule |
-| 5 | | Swap TF-IDF+SVD for a fixed neural embedding model |
+| 2 | done | Ingestion agent over free ATS sources, SQLite store, FastAPI service |
+| 3 | done | Free scheduled production run via GitHub Actions |
+| 4 | next | Point the web app at the live API instead of its own in-browser corpus |
+| 5 | | pgvector on Postgres, so search stops rebuilding the index per request |
+| 6 | | Swap TF-IDF+SVD for a fixed neural embedding model |
+| 7 | | Move to AWS if it outgrows Actions: Terraform for RDS / Lambda / EventBridge / SES |
 
 On ingestion: scraping LinkedIn, SEEK or Indeed directly is against their terms of service, and getting an account flagged while you're actively applying through it is a bad trade. Official APIs and your own inbox are the routes worth building on.
 

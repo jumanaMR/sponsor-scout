@@ -231,6 +231,15 @@ class SponsorshipRAG:
         if not self.chunks:
             raise ValueError("No chunks to index - call add_documents first.")
         texts = [c.text for c in self.chunks]
+
+        # max_df=0.95 drops terms appearing in more than 95% of chunks. On a
+        # corpus of one or two documents that threshold rounds down to zero
+        # documents and collides with min_df=1, and sklearn raises rather
+        # than returning an empty vocabulary. A tiny corpus is a real state
+        # (a freshly-seeded store, a single-company filter), so relax the
+        # ratio there instead of letting the caller hit a 500.
+        max_df = 1.0 if len(texts) < 5 else 0.95
+        self.vectorizer = TfidfVectorizer(stop_words="english", max_df=max_df, min_df=1)
         tfidf = self.vectorizer.fit_transform(texts)
         max_components = max(1, min(tfidf.shape[0] - 1, tfidf.shape[1] - 1))
         n_components = max(1, min(self._requested_components, max_components))

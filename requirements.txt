@@ -12,3 +12,7 @@ python-docx>=1.1
 
 # Notebook
 jupyter>=1.0
+
+# API service (sponsor_scout/api.py)
+fastapi>=0.110
+uvicorn>=0.27
