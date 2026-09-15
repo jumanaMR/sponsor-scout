@@ -4,23 +4,21 @@
 # visa-sponsorship signal in job postings: chunking -> embedding ->
 # vector index -> similarity search -> sponsorship heuristic -> answer.
 #
-# EMBEDDING BACKEND NOTE
-# -----------------------
-# This environment has no outbound access to PyPI, so this version embeds
-# text with TF-IDF + TruncatedSVD (scikit-learn, already installed) instead
-# of a neural embedding model. It is a real, classic dense-vector technique
-# (this is essentially LSA) and the rest of the pipeline — chunking, the
-# vector index, cosine-similarity retrieval, metadata filtering — is
-# identical to what you'd use with neural embeddings.
+# EMBEDDING BACKEND
+# -----------------
+# Embedding is delegated to sponsor_scout.embeddings, which implements two
+# backends behind one small interface (EmbeddingBackend): TfidfSvdBackend
+# (classic LSA — no extra dependency, no model download, works fully
+# offline — this project's original backend, built in an environment with
+# no outbound PyPI access) and SentenceTransformerBackend (real neural
+# embeddings via the optional `sentence-transformers` package). `embedding_
+# backend="auto"` (the default) prefers the neural backend and falls back
+# to TF-IDF automatically when sentence-transformers isn't installed or its
+# model can't be fetched. See sponsor_scout/embeddings.py for the details.
 #
-# To upgrade to neural embeddings once you have internet access (e.g. on
-# your own machine), swap `_Embedder` below for something like:
-#
-#     from sentence_transformers import SentenceTransformer
-#     model = SentenceTransformer("all-MiniLM-L6-v2")
-#     vectors = model.encode(texts, normalize_embeddings=True)
-#
-# and swap the numpy cosine-similarity search for a FAISS index:
+# To also upgrade the vector index itself (currently plain numpy cosine
+# similarity, rebuilt per request — fine at a few thousand postings), swap
+# it for a FAISS or pgvector index:
 #
 #     import faiss
 #     index = faiss.IndexFlatIP(vectors.shape[1])
@@ -38,9 +36,9 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from sklearn.decomposition import TruncatedSVD
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from sponsor_scout.embeddings import EmbeddingBackend, resolve_backend
 
 # ---------------------------------------------------------------------------
 # File loading (CV upload)
@@ -204,10 +202,16 @@ class Chunk:
 
 
 class SponsorshipRAG:
-    def __init__(self, n_components: int = 100):
-        self.vectorizer = TfidfVectorizer(stop_words="english", max_df=0.95, min_df=1)
+    def __init__(self, n_components: int = 100, embedding_backend: str = "auto"):
+        """embedding_backend: 'auto' (default, prefers neural embeddings via
+        sentence-transformers and falls back to TF-IDF+SVD when that's not
+        installed or its model can't be fetched), 'tfidf', or
+        'sentence-transformers' to force one. n_components only affects the
+        tfidf backend (SVD dimensionality) — sentence-transformers uses its
+        model's native embedding size."""
         self._requested_components = n_components
-        self.svd: Optional[TruncatedSVD] = None
+        self._embedding_backend_name = embedding_backend
+        self.backend: Optional[EmbeddingBackend] = None
         self.chunks: List[Chunk] = []
         self.vectors: Optional[np.ndarray] = None
         self._fitted = False
@@ -232,19 +236,8 @@ class SponsorshipRAG:
             raise ValueError("No chunks to index - call add_documents first.")
         texts = [c.text for c in self.chunks]
 
-        # max_df=0.95 drops terms appearing in more than 95% of chunks. On a
-        # corpus of one or two documents that threshold rounds down to zero
-        # documents and collides with min_df=1, and sklearn raises rather
-        # than returning an empty vocabulary. A tiny corpus is a real state
-        # (a freshly-seeded store, a single-company filter), so relax the
-        # ratio there instead of letting the caller hit a 500.
-        max_df = 1.0 if len(texts) < 5 else 0.95
-        self.vectorizer = TfidfVectorizer(stop_words="english", max_df=max_df, min_df=1)
-        tfidf = self.vectorizer.fit_transform(texts)
-        max_components = max(1, min(tfidf.shape[0] - 1, tfidf.shape[1] - 1))
-        n_components = max(1, min(self._requested_components, max_components))
-        self.svd = TruncatedSVD(n_components=n_components, random_state=42)
-        dense = self.svd.fit_transform(tfidf)
+        self.backend = resolve_backend(self._embedding_backend_name, n_components=self._requested_components)
+        dense = self.backend.fit_transform(texts)
         norms = np.linalg.norm(dense, axis=1, keepdims=True)
         norms[norms == 0] = 1e-9
         self.vectors = dense / norms
@@ -252,10 +245,9 @@ class SponsorshipRAG:
         return self
 
     def _embed_query(self, query: str) -> np.ndarray:
-        if not self._fitted or self.svd is None:
+        if not self._fitted or self.backend is None:
             raise ValueError("Index not built - call build_index() first.")
-        tfidf = self.vectorizer.transform([query])
-        dense = self.svd.transform(tfidf)
+        dense = self.backend.transform([query])
         norm = np.linalg.norm(dense, axis=1, keepdims=True)
         norm[norm == 0] = 1e-9
         return dense / norm
@@ -357,8 +349,7 @@ class SponsorshipRAG:
         recommend_next() via its cv_weight argument."""
         if not self._fitted:
             raise ValueError("Index not built - call build_index() first.")
-        tfidf = self.vectorizer.transform([cv_text])
-        dense = self.svd.transform(tfidf)
+        dense = self.backend.transform([cv_text])
         norm = np.linalg.norm(dense, axis=1, keepdims=True)
         norm[norm == 0] = 1e-9
         self.cv_vector = (dense / norm)[0]

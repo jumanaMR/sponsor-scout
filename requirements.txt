@@ -16,3 +16,7 @@ jupyter>=1.0
 # API service (sponsor_scout/api.py)
 fastapi>=0.110
 uvicorn>=0.27
+
+# Optional: neural embeddings (sponsor_scout/embeddings.py). Not installed
+# by default — TF-IDF+SVD works with nothing beyond the core deps above.
+# pip install sentence-transformers>=2.7

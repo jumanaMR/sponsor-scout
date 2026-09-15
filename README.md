@@ -139,6 +139,7 @@ Your filled-in CSVs and your CV are gitignored. Don't commit them — they're pe
 
 ```
 sponsor_scout/       the pipeline — chunking, embedding, index, heuristic, recommender
+  embeddings.py      embedding backends (TF-IDF+SVD, sentence-transformers) behind one interface
   sources/           one adapter per free job-data provider
   agent.py           the ingestion agent + CLI
   store.py           SQLite posting store
@@ -153,7 +154,7 @@ scripts/             notebook build + a Streamlit smoke test that needs no Strea
 
 ## Design decisions
 
-**TF-IDF + SVD, not a neural embedding model.** The first version was built in an environment with no outbound network access, so `sentence-transformers` wasn't installable. TF-IDF + `TruncatedSVD` is a real dense-vector technique (this is classic LSA) and kept the *architecture* honest — chunking, an index, cosine retrieval, reranking — with a documented three-line upgrade path. It's a constraint handled openly rather than a shortcut presented as a choice. The upgrade is in the roadmap below.
+**Two embedding backends behind one interface, not a hard-coded choice.** The first version was built in an environment with no outbound network access, so `sentence-transformers` wasn't installable — TF-IDF + `TruncatedSVD` (classic LSA) is what kept the *architecture* honest in the meantime: chunking, an index, cosine retrieval, reranking, all identical to what a neural embedding would need. That backend (`TfidfSvdBackend`) is still there and still the one guaranteed to work fully offline. `sponsor_scout/embeddings.py` now also ships `SentenceTransformerBackend`, a real neural encoder via the optional `sentence-transformers` package (`pip install sponsor-scout[embeddings]`). `SponsorshipRAG(embedding_backend="auto")` — the default — prefers the neural backend and falls back to TF-IDF automatically when the package isn't installed or its model can't be fetched, so the same constraint that motivated TF-IDF in the first place (no network) degrades gracefully instead of crashing.
 
 **Content-based, not collaborative filtering.** The recommender ranks by similarity to what *you* looked at. Netflix and YouTube blend that with collaborative filtering — similarity to what people *like you* looked at — which needs many users' histories. With a single user there's no collaborative signal to draw on, so this implements the content-based half and says so, rather than claiming to be something it isn't.
 
@@ -194,7 +195,7 @@ Two more, from building the agent, pinned in `tests/test_agent.py` and `tests/te
 | 3 | done | Free scheduled production run via GitHub Actions |
 | 4 | next | Point the web app at the live API instead of its own in-browser corpus |
 | 5 | | pgvector on Postgres, so search stops rebuilding the index per request |
-| 6 | | Swap TF-IDF+SVD for a fixed neural embedding model |
+| 6 | done | Neural embeddings (`sentence-transformers`, optional extra) alongside TF-IDF+SVD as an automatic offline fallback |
 | 7 | | Move to AWS if it outgrows Actions: Terraform for RDS / Lambda / EventBridge / SES |
 
 On ingestion: scraping LinkedIn, SEEK or Indeed directly is against their terms of service, and getting an account flagged while you're actively applying through it is a bad trade. Official APIs and your own inbox are the routes worth building on.
