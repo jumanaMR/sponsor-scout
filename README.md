@@ -72,6 +72,19 @@ uvicorn sponsor_scout.api:app --reload
 
 Ingestion and serving are separate processes on purpose: ingestion is slow, periodic, and allowed to fail; serving is fast, constant, and mustn't. A request should never be waiting on a third-party job board.
 
+## Measuring an LLM classifier against the keyword baseline
+
+`sponsorship_signal()` is exact-phrase matching — fast, dependency-free, and blind to any paraphrase it has no phrase for. `sponsor_scout/llm_classifier.py` defines a provider-agnostic interface (`LLMSponsorshipClassifier`) for comparing something smarter against it, and `sponsor_scout/eval_llm.py` is the harness that runs the comparison:
+
+```bash
+python -m sponsor_scout.eval_llm --sample                       # the 12-posting synthetic corpus
+python -m sponsor_scout.eval_llm --db data/postings.db --limit 500
+```
+
+It reports agreement, per-label precision/recall/F1, a confusion matrix, and — the most useful part — every posting where the classifier under test and the keyword baseline read the same text differently, the same way `agent run`'s provider-flag disagreements are its most informative output.
+
+This repo has no `ANTHROPIC_API_KEY` configured (see the placeholder already in `.env.example`) and no network budget here to verify a real call end to end, so the only implementation shipped is `StubLLMClassifier` — a deterministic, offline stand-in with its own broader phrase list, used to prove the harness surfaces genuine disagreements rather than trivially agreeing on everything. Wiring in a real model means implementing one class behind the same interface; see the worked example in `llm_classifier.py`'s module docstring.
+
 ## Quickstart
 
 ```bash
@@ -140,6 +153,8 @@ Your filled-in CSVs and your CV are gitignored. Don't commit them — they're pe
 ```
 sponsor_scout/       the pipeline — chunking, embedding, index, heuristic, recommender
   embeddings.py      embedding backends (TF-IDF+SVD, sentence-transformers) behind one interface
+  llm_classifier.py  provider-agnostic LLM classifier interface + an offline stub implementation
+  eval_llm.py        eval harness: LLM classifier vs. the keyword baseline (precision/recall/F1/confusion matrix/disagreements)
   sources/           one adapter per free job-data provider
   agent.py           the ingestion agent + CLI
   store.py           SQLite posting store

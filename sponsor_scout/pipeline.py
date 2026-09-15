@@ -187,6 +187,13 @@ SPONSORSHIP_BOOST = {
     "likely NOT sponsoring": -1.0,
 }
 
+# The canonical label set sponsorship_signal() can return. Derived from
+# SPONSORSHIP_BOOST rather than repeated as a literal list, so a new label
+# can't be added in one place and missed in the other. Any other classifier
+# meant to be compared against the heuristic (see sponsor_scout.llm_classifier)
+# should return labels from this same set.
+SPONSORSHIP_LABELS = tuple(SPONSORSHIP_BOOST.keys())
+
 
 # ---------------------------------------------------------------------------
 # Vector store / RAG pipeline
