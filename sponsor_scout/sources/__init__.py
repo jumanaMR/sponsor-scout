@@ -23,9 +23,17 @@ from sponsor_scout.sources.base import (
 # company sponsors visas; that is what the pipeline works out from the
 # postings themselves. Edit freely: the identifier is the last path segment
 # of the company's careers URL.
+#
+# Verified reachable via `agent doctor` on 2026-09-15. `canva`, `atlassian`
+# and `netflix` were in this list originally but all three now return HTTP
+# 404 — not an adapter bug, those companies just don't serve a public board
+# at that token anymore (moved off Greenhouse/Lever, or renamed it).
+# Replaced with gitlab/cloudflare (Greenhouse) and palantir (Lever), all
+# confirmed live. Re-run `doctor` periodically — a company moving off its
+# ATS is a real failure mode, not a hypothetical one.
 DEFAULT_COMPANIES: Dict[str, List[str]] = {
-    "greenhouse": ["canva", "atlassian", "airtable", "databricks", "elastic"],
-    "lever": ["spotify", "netflix"],
+    "greenhouse": ["gitlab", "cloudflare", "airtable", "databricks", "elastic"],
+    "lever": ["spotify", "palantir"],
     "ashby": ["ramp", "linear"],
 }
 
