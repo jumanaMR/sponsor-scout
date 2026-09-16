@@ -1,4 +1,4 @@
-# Sponsor Scout
+# Sponsor Scout Recommendation Sytem
 
 Retrieval over job postings, scored for visa-sponsorship signal — search, recommendations, and CV matching over a corpus you build yourself.
 
